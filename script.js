@@ -17,6 +17,10 @@ if (typeof dialog.showModal === 'function') {
             if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
             event.preventDefault();
             document.getElementById('dialog-title').textContent = project.dataset.project;
+      const notes = document.getElementById('dialog-notes');
+      const template = project.closest('.project').querySelector('.project-notes');
+      notes.replaceChildren(...(template ? [template.content.cloneNode(true)] : []));
+      notes.hidden = !template;
             document.getElementById('github-link').href = project.href;
             const url = project.dataset.liveUrl;
             const published = /^https?:\/\//i.test(url);

@@ -30,9 +30,10 @@ for (const [reducedMotion, supported] of [[false, true], [true, true], [false, f
     }
 }
 // Modal state resets between projects, and untrusted URL schemes stay disabled.
-const elements = Object.fromEntries(['year', 'dialog-title', 'github-link', 'live-status', 'live-link', 'back-to-top'].map(id => [id, {
+const elements = Object.fromEntries(['year', 'dialog-title', 'dialog-notes', 'github-link', 'live-status', 'live-link', 'back-to-top'].map(id => [id, {
     setAttribute(name, value) { this[name] = value; },
     removeAttribute(name) { delete this[name]; },
+  replaceChildren(...children) { this.children = children; },
 }]));
 let opens = 0;
 let closes = 0;
@@ -43,6 +44,7 @@ elements['project-dialog'] = {
 };
 const projects = ['', 'https://example.com', 'javascript:alert(1)', ''].map((url, index) => ({
     dataset: { project: `Project ${index}`, liveUrl: url }, href: `https://github.com/example/project${index}`,
+  closest: () => ({ querySelector: () => index === 0 ? { content: { cloneNode: () => 'Project notes' } } : null }),
     setAttribute() { }, addEventListener(type, fn) { this.click = fn; },
 }));
 let scrollHandler;
@@ -61,6 +63,8 @@ for (const [index, project] of projects.entries()) {
     project.click({ preventDefault() { prevented = true; } });
     assert.ok(prevented);
     assert.equal(elements['dialog-title'].textContent, project.dataset.project);
+  assert.deepEqual(elements['dialog-notes'].children, index === 0 ? ['Project notes'] : []);
+  assert.equal(elements['dialog-notes'].hidden, index !== 0);
     assert.equal(elements['github-link'].href, project.href);
     assert.equal(elements['live-link']['aria-disabled'], String(index !== 1));
     assert.equal(elements['live-link'].href, index === 1 ? 'https://example.com' : undefined);
@@ -87,7 +91,7 @@ assert.equal((html.match(/class="project reveal"/g) || []).length, 4);
 assert.match(html, /href="assets\/dmytro_datsko_cv\.pdf" download/);
 assert.equal(readFileSync(new URL('assets/dmytro_datsko_cv.pdf', import.meta.url)).toString('ascii', 0, 5), '%PDF-');
 const css = readFileSync(new URL('styles.css', import.meta.url), 'utf8');
-for (const [, asset] of [...html.matchAll(/src="(assets\/[^"]+)"/g), ...css.matchAll(/url\('([^']+)'\)/g)]) {
+for (const [, asset] of [...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g), ...css.matchAll(/url\('([^']+)'\)/g)]) {
     assert.ok(readFileSync(new URL(asset, import.meta.url)).length > 0, `Missing or empty asset: ${asset}`);
 }
 assert.equal(readFileSync(new URL('assets/JetBrainsMono-Regular.woff2', import.meta.url)).toString('ascii', 0, 4), 'wOF2');
